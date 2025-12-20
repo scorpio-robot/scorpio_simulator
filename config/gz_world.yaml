@@ -1,0 +1,23 @@
+world: "warehouse"
+
+robots:
+  turtlebot3_dqn:
+    - name: "scorpio"
+      x_pose: "0.0"
+      y_pose: "0.0"
+      z_pose: "0.0"
+      yaw: "0.0"
+
+  turtlebot3_house:
+    - name: "scorpio"
+      x_pose: "-2.0"
+      y_pose: "1.0"
+      z_pose: "0.0"
+      yaw: "0.0"
+
+  warehouse:
+    - name: "scorpio"
+      x_pose: "0.0"
+      y_pose: "0.0"
+      z_pose: "0.0"
+      yaw: "0.0"
