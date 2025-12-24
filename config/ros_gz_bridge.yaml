@@ -5,7 +5,7 @@
   gz_type_name: "ignition.msgs.Model"
   direction: "GZ_TO_ROS"
 
-- ros_topic_name: "/base_odometry_gt"
+- ros_topic_name: "/gt/base_link"
   gz_topic_name: "/model/scorpio/odometry"
   ros_type_name: "nav_msgs/msg/Odometry"
   gz_type_name: "ignition.msgs.Odometry"
