@@ -23,8 +23,7 @@
 #include "ignition/gazebo/Model.hh"
 #include "ignition/gazebo/System.hh"
 #include "ignition/math/Pose3.hh"
-#include "nav_msgs/msg/odometry.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include "ignition/transport/Node.hh"
 
 namespace scorpio_simulator
 {
@@ -33,11 +32,17 @@ namespace scorpio_simulator
 class GlobalOdometryPublisherPrivate
 {
 public:
-  /// \brief ROS node for communication
-  rclcpp::Node::SharedPtr ros_node_;
+  /// \brief Ignition communication node
+  ignition::transport::Node node_;
 
-  /// \brief ROS publisher for odometry messages
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_;
+  /// \brief Publisher for odometry messages
+  ignition::transport::Node::Publisher pub_;
+
+  /// \brief Publisher for odometry with covariance messages
+  ignition::transport::Node::Publisher pub_cov_;
+
+  /// \brief Publisher for TF messages
+  ignition::transport::Node::Publisher pub_tf_;
 
   /// \brief Model entity
   ignition::gazebo::Entity model_entity_;
@@ -65,6 +70,9 @@ public:
 
   /// \brief Robot namespace
   std::string robot_namespace_;
+
+  /// \brief Publish TF
+  bool publish_tf_{false};
 
   /// \brief Compute twist in local frame
   bool local_twist_{false};
@@ -98,16 +106,17 @@ public:
 /// \brief Plugin that publishes 3D pose and twist ground truth
 ///
 /// This plugin publishes the pose and twist of a specified link
-/// as nav_msgs/Odometry messages for ground truth comparison.
+/// as ignition::msgs::Odometry messages for ground truth comparison.
 ///
 /// ## System Parameters
-///
-/// - `<robot_namespace>` - Namespace for the ROS node (optional)
-/// - `<gazebo_child_frame>` - Gazebo link name to track (required)
+///optional, default: "/model/{model_name}/{child_frame}/odometry")
+/// - `<publish_tf>` - Publish TF message (optional, default: false)
+/// - `<tf_topic>` - Ignition topic name for publishing TF (optional, default: "/model/{model_name}/{child_fr
 /// - `<gazebo_frame>` - Gazebo reference frame (default: "world")
-/// - `<topic_name>` - ROS topic name for publishing (required)
-/// - `<ros_frame_id>` - ROS odometry parent frame_id (optional, default: "odom")
-/// - `<ros_child_frame_id>` - ROS odometry child_frame_id (optional, default: gazebo_child_frame)
+/// - `<topic_name>` - Ignition topic name for publishing Odometry (required)
+/// - `<tf_topic>` - Ignition topic name for publishing TF (optional, default: "/model/{model_name}/pose")
+/// - `<ros_frame_id>` - Frame ID for ROS message header (optional, default: "odom")
+/// - `<ros_child_frame_id>` - Child Frame ID for ROS message header (optional, default: gazebo_child_frame)
 /// - `<local_twist>` - Compute twist in local frame (default: false)
 /// - `<xyz_offset>` - XYZ position offset (default: 0 0 0)
 /// - `<rpy_offset>` - RPY orientation offset (default: 0 0 0)

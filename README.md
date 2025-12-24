@@ -72,15 +72,7 @@ ros2 launch rmu_gazebo_simulator bringup_sim.launch.py
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-#### 2.3.2 查看 Ground Truth 数据
-
-查看机器人精确位姿（如果模型加载了 GlobalOdometryPublisher 插件）：
-
-```sh
-ros2 topic echo /ground_truth/odom
-```
-
-#### 2.3.3 切换仿真世界
+#### 2.3.2 切换仿真世界
 
 修改 [gz_world.yaml](./rmu_gazebo_simulator/config/gz_world.yaml) 中的 `world`。当前可选: `rmul_2024`, `rmuc_2024`, `rmul_2025`, `rmuc_2025`
 
@@ -94,6 +86,7 @@ GlobalOdometryPublisher 是一个用于发布机器人任意 link 在世界坐�
 #### 功能特性
 
 - 发布精确的 3D 位姿和速度信息（无噪声或可配置噪声）
+- 发布 Ignition Odometry 和 TF 消息
 - 支持世界坐标系或相对于其他链接的坐标系
 - 可配置的更新频率
 - 支持位姿偏移
@@ -103,12 +96,13 @@ GlobalOdometryPublisher 是一个用于发布机器人任意 link 在世界坐�
 
 | 参数名 | 类型 | 必需 | 默认值 | 说明 |
 | ------ | ---- | ---- | ------ | ---- |
-| `robot_namespace` | string | 否 | "" | ROS 节点命名空间 |
 | `gazebo_child_frame` | string | 是 | - | Gazebo 中要跟踪的链接名称 |
 | `gazebo_frame` | string | 否 | "world" | Gazebo 参考坐标系（world 或其他链接） |
-| `topic_name` | string | 是 | - | ROS 话题名称 |
-| `ros_frame_id` | string | 否 | "odom" | ROS Odometry 消息的 frame_id |
-| `ros_child_frame_id` | string | 否 | gazebo_child_frame | ROS Odometry 消息的 child_frame_id |
+| `topic_name` | string | 否 | "/model/{model}/{child}/odometry" | Ignition 话题名称 (用于发布 Odometry) |
+| `publish_tf` | bool | 否 | false | 是否发布 TF 消息 |
+| `tf_topic` | string | 否 | "/model/{model}/{child}/pose" | Ignition 话题名称 (用于发布 TF) |
+| `ros_frame_id` | string | 否 | "odom" | 写入消息头的 frame_id (供 ROS Bridge 使用) |
+| `ros_child_frame_id` | string | 否 | gazebo_child_frame | 写入消息头的 child_frame_id (供 ROS Bridge 使用) |
 | `local_twist` | bool | 否 | false | 是否在局部坐标系中计算速度 |
 | `xyz_offset` | Vector3d | 否 | [0, 0, 0] | 位置偏移 (米) |
 | `rpy_offset` | Vector3d | 否 | [0, 0, 0] | 姿态偏移 (弧度) |

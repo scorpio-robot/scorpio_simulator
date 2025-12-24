@@ -30,6 +30,10 @@
 #include "ignition/gazebo/components/Model.hh"
 #include "ignition/gazebo/components/Name.hh"
 #include "ignition/gazebo/components/Pose.hh"
+#include "ignition/msgs/Utility.hh"
+#include "ignition/msgs/odometry.pb.h"
+#include "ignition/msgs/odometry_with_covariance.pb.h"
+#include "ignition/msgs/pose_v.pb.h"
 #include "ignition/plugin/Register.hh"
 
 namespace scorpio_simulator
@@ -40,13 +44,7 @@ GlobalOdometryPublisher::GlobalOdometryPublisher()
 {
 }
 
-GlobalOdometryPublisher::~GlobalOdometryPublisher()
-{
-  // Shutdown ROS node
-  if (data_ptr_->ros_node_) {
-    data_ptr_->ros_node_.reset();
-  }
-}
+GlobalOdometryPublisher::~GlobalOdometryPublisher() {}
 
 void GlobalOdometryPublisher::Configure(
   const ignition::gazebo::Entity & _entity, const std::shared_ptr<const sdf::Element> & _sdf,
@@ -75,12 +73,15 @@ void GlobalOdometryPublisher::Configure(
   }
   data_ptr_->gazebo_child_frame_ = _sdf->Get<std::string>("gazebo_child_frame");
 
-  // Get topic name (required)
-  if (!_sdf->HasElement("topic_name")) {
-    ignerr << "GlobalOdometryPublisher plugin missing <topic_name>, cannot proceed" << '\n';
-    return;
+  // Get topic name (optional)
+  if (_sdf->HasElement("topic_name")) {
+    data_ptr_->topic_name_ = _sdf->Get<std::string>("topic_name");
+  } else {
+    data_ptr_->topic_name_ =
+      "/model/" + model.Name(_ecm) + "/" + data_ptr_->gazebo_child_frame_ + "/odometry";
+    igndbg << "GlobalOdometryPublisher plugin missing <topic_name>, defaults to "
+           << data_ptr_->topic_name_ << '\n';
   }
-  data_ptr_->topic_name_ = _sdf->Get<std::string>("topic_name");
 
   // Get gazebo parent frame (optional, defaults to "world")
   if (_sdf->HasElement("gazebo_frame")) {
@@ -96,6 +97,14 @@ void GlobalOdometryPublisher::Configure(
   } else {
     data_ptr_->local_twist_ = false;
     igndbg << "GlobalOdometryPublisher plugin missing <local_twist>, defaults to false" << '\n';
+  }
+
+  // Get publish_tf flag (optional, defaults to false)
+  if (_sdf->HasElement("publish_tf")) {
+    data_ptr_->publish_tf_ = _sdf->Get<bool>("publish_tf");
+  } else {
+    data_ptr_->publish_tf_ = false;
+    igndbg << "GlobalOdometryPublisher plugin missing <publish_tf>, defaults to false" << '\n';
   }
 
   // Get XYZ offset (optional, defaults to [0, 0, 0])
@@ -132,18 +141,6 @@ void GlobalOdometryPublisher::Configure(
            << "(as fast as possible)" << '\n';
   }
 
-  // Initialize ROS node
-  if (!rclcpp::ok()) {
-    rclcpp::init(0, nullptr);
-  }
-
-  std::string node_name = "global_odometry_publisher";
-  if (!data_ptr_->robot_namespace_.empty()) {
-    node_name = data_ptr_->robot_namespace_ + "_" + node_name;
-  }
-
-  data_ptr_->ros_node_ = rclcpp::Node::make_shared(node_name);
-
   // Get ROS frame_id (optional, defaults to "odom")
   if (_sdf->HasElement("ros_frame_id")) {
     data_ptr_->ros_frame_id_ = _sdf->Get<std::string>("ros_frame_id");
@@ -162,9 +159,33 @@ void GlobalOdometryPublisher::Configure(
            << data_ptr_->ros_child_frame_id_ << '\n';
   }
 
-  // Create publisher
-  data_ptr_->pub_ =
-    data_ptr_->ros_node_->create_publisher<nav_msgs::msg::Odometry>(data_ptr_->topic_name_, 10);
+  // Create publishers
+  std::string odom_topic = data_ptr_->topic_name_;
+
+  // Validate topic
+  std::string valid_topic = ignition::transport::TopicUtils::AsValidTopic(odom_topic);
+  if (valid_topic.empty()) {
+    ignerr << "Invalid topic name: " << odom_topic << '\n';
+    return;
+  }
+
+  // Advertise Odometry
+  data_ptr_->pub_ = data_ptr_->node_.Advertise<ignition::msgs::Odometry>(valid_topic);
+
+  // Advertise OdometryWithCovariance
+  std::string cov_topic = valid_topic + "_with_covariance";
+  data_ptr_->pub_cov_ =
+    data_ptr_->node_.Advertise<ignition::msgs::OdometryWithCovariance>(cov_topic);
+
+  // Advertise TF if requested
+  if (data_ptr_->publish_tf_) {
+    std::string tf_topic =
+      "/model/" + model.Name(_ecm) + "/" + data_ptr_->gazebo_child_frame_ + "/pose";
+    if (_sdf->HasElement("tf_topic")) {
+      tf_topic = _sdf->Get<std::string>("tf_topic");
+    }
+    data_ptr_->pub_tf_ = data_ptr_->node_.Advertise<ignition::msgs::Pose_V>(tf_topic);
+  }
 
   // Initialize Gaussian noise generator
   data_ptr_->normal_distribution_ =
@@ -175,7 +196,7 @@ void GlobalOdometryPublisher::Configure(
          << data_ptr_->gazebo_child_frame_ << '\n'
          << "  ROS frames: " << data_ptr_->ros_frame_id_ << " -> " << data_ptr_->ros_child_frame_id_
          << '\n'
-         << "  Topic: " << data_ptr_->topic_name_ << '\n';
+         << "  Topic: " << valid_topic << '\n';
 }
 
 void GlobalOdometryPublisher::PreUpdate(
@@ -315,56 +336,77 @@ void GlobalOdometryPublisher::PostUpdate(
   pose.Rot().Normalize();
 
   // Create and publish odometry message
-  nav_msgs::msg::Odometry odom_msg;
+  ignition::msgs::Odometry odom_msg;
 
   // Set header
-  odom_msg.header.stamp = data_ptr_->ros_node_->now();
-  odom_msg.header.frame_id = data_ptr_->ros_frame_id_;
-  odom_msg.child_frame_id = data_ptr_->ros_child_frame_id_;
+  auto header = odom_msg.mutable_header();
+  header->mutable_stamp()->CopyFrom(ignition::msgs::Convert(_info.simTime));
+
+  auto frame_id = header->add_data();
+  frame_id->set_key("frame_id");
+  frame_id->add_value(data_ptr_->ros_frame_id_);
+
+  auto child_frame_id = header->add_data();
+  child_frame_id->set_key("child_frame_id");
+  child_frame_id->add_value(data_ptr_->ros_child_frame_id_);
 
   // Set pose
-  odom_msg.pose.pose.position.x = pose.Pos().X();
-  odom_msg.pose.pose.position.y = pose.Pos().Y();
-  odom_msg.pose.pose.position.z = pose.Pos().Z();
-
-  odom_msg.pose.pose.orientation.x = pose.Rot().X();
-  odom_msg.pose.pose.orientation.y = pose.Rot().Y();
-  odom_msg.pose.pose.orientation.z = pose.Rot().Z();
-  odom_msg.pose.pose.orientation.w = pose.Rot().W();
+  ignition::msgs::Set(odom_msg.mutable_pose(), pose);
 
   // Set twist with Gaussian noise
-  odom_msg.twist.twist.linear.x = vpos.X() + gaussianKernel(0, data_ptr_->gaussian_noise_);
-  odom_msg.twist.twist.linear.y = vpos.Y() + gaussianKernel(0, data_ptr_->gaussian_noise_);
-  odom_msg.twist.twist.linear.z = vpos.Z() + gaussianKernel(0, data_ptr_->gaussian_noise_);
+  odom_msg.mutable_twist()->mutable_linear()->set_x(
+    vpos.X() + gaussianKernel(0, data_ptr_->gaussian_noise_));
+  odom_msg.mutable_twist()->mutable_linear()->set_y(
+    vpos.Y() + gaussianKernel(0, data_ptr_->gaussian_noise_));
+  odom_msg.mutable_twist()->mutable_linear()->set_z(
+    vpos.Z() + gaussianKernel(0, data_ptr_->gaussian_noise_));
 
-  odom_msg.twist.twist.angular.x = veul.X() + gaussianKernel(0, data_ptr_->gaussian_noise_);
-  odom_msg.twist.twist.angular.y = veul.Y() + gaussianKernel(0, data_ptr_->gaussian_noise_);
-  odom_msg.twist.twist.angular.z = veul.Z() + gaussianKernel(0, data_ptr_->gaussian_noise_);
-
-  // Set covariance
-  double gn2 = data_ptr_->gaussian_noise_ * data_ptr_->gaussian_noise_;
-  odom_msg.pose.covariance[0] = gn2;   // x
-  odom_msg.pose.covariance[7] = gn2;   // y
-  odom_msg.pose.covariance[14] = gn2;  // z
-  odom_msg.pose.covariance[21] = gn2;  // roll
-  odom_msg.pose.covariance[28] = gn2;  // pitch
-  odom_msg.pose.covariance[35] = gn2;  // yaw
-
-  odom_msg.twist.covariance[0] = gn2;   // vx
-  odom_msg.twist.covariance[7] = gn2;   // vy
-  odom_msg.twist.covariance[14] = gn2;  // vz
-  odom_msg.twist.covariance[21] = gn2;  // wx
-  odom_msg.twist.covariance[28] = gn2;  // wy
-  odom_msg.twist.covariance[35] = gn2;  // wz
+  odom_msg.mutable_twist()->mutable_angular()->set_x(
+    veul.X() + gaussianKernel(0, data_ptr_->gaussian_noise_));
+  odom_msg.mutable_twist()->mutable_angular()->set_y(
+    veul.Y() + gaussianKernel(0, data_ptr_->gaussian_noise_));
+  odom_msg.mutable_twist()->mutable_angular()->set_z(
+    veul.Z() + gaussianKernel(0, data_ptr_->gaussian_noise_));
 
   // Publish message
-  data_ptr_->pub_->publish(odom_msg);
+  if (data_ptr_->pub_.Valid()) {
+    data_ptr_->pub_.Publish(odom_msg);
+  }
+
+  // Publish OdometryWithCovariance
+  if (data_ptr_->pub_cov_.Valid()) {
+    ignition::msgs::OdometryWithCovariance odom_cov_msg;
+    odom_cov_msg.mutable_header()->CopyFrom(*header);
+
+    // Copy pose and twist
+    odom_cov_msg.mutable_pose_with_covariance()->mutable_pose()->CopyFrom(odom_msg.pose());
+    odom_cov_msg.mutable_twist_with_covariance()->mutable_twist()->CopyFrom(odom_msg.twist());
+
+    // Set covariance
+    double gn2 = data_ptr_->gaussian_noise_ * data_ptr_->gaussian_noise_;
+    for (int i = 0; i < 36; i++) {
+      if (i % 7 == 0) {
+        odom_cov_msg.mutable_pose_with_covariance()->mutable_covariance()->add_data(gn2);
+        odom_cov_msg.mutable_twist_with_covariance()->mutable_covariance()->add_data(gn2);
+      } else {
+        odom_cov_msg.mutable_pose_with_covariance()->mutable_covariance()->add_data(0.0);
+        odom_cov_msg.mutable_twist_with_covariance()->mutable_covariance()->add_data(0.0);
+      }
+    }
+    data_ptr_->pub_cov_.Publish(odom_cov_msg);
+  }
+
+  // Publish TF
+  if (data_ptr_->pub_tf_.Valid()) {
+    ignition::msgs::Pose_V tf_msg;
+    auto tf_pose = tf_msg.add_pose();
+    tf_pose->CopyFrom(odom_msg.pose());
+    tf_pose->mutable_header()->CopyFrom(*header);
+    data_ptr_->pub_tf_.Publish(tf_msg);
+  }
 
   // Update last time
   data_ptr_->last_update_time_ = _info.simTime;
-
-  // Spin ROS node
-  rclcpp::spin_some(data_ptr_->ros_node_);
 }
 
 double GlobalOdometryPublisher::gaussianKernel(double mu, double sigma)

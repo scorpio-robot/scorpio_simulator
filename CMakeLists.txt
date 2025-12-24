@@ -38,6 +38,8 @@ ament_auto_add_library(GlobalOdometryPublisher SHARED
 
 target_link_libraries(GlobalOdometryPublisher
   ignition-gazebo${IGN_GAZEBO_VER}::ignition-gazebo${IGN_GAZEBO_VER}
+  ignition-transport${IGN_TRANSPORT_VER}::ignition-transport${IGN_TRANSPORT_VER}
+  ignition-msgs${IGN_MSGS_VER}::ignition-msgs${IGN_MSGS_VER}
 )
 
 #############
