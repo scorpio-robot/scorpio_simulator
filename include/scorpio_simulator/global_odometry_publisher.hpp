@@ -77,8 +77,8 @@ public:
   /// \brief Compute twist in local frame
   bool local_twist_{false};
 
-  /// \brief Constant offset pose
-  ignition::math::Pose3d offset_;
+  /// \brief Virtual world origin pose (for coordinate system transformation)
+  ignition::math::Pose3d virtual_world_origin_;
 
   /// \brief Update rate (Hz), 0 means as fast as possible
   double update_rate_{0.0};
@@ -118,8 +118,7 @@ public:
 /// - `<ros_frame_id>` - Frame ID for ROS message header (optional, default: "odom")
 /// - `<ros_child_frame_id>` - Child Frame ID for ROS message header (optional, default: gazebo_child_frame)
 /// - `<local_twist>` - Compute twist in local frame (default: false)
-/// - `<xyz_offset>` - XYZ position offset (default: 0 0 0)
-/// - `<rpy_offset>` - RPY orientation offset (default: 0 0 0)
+/// - `<virtual_world_origin>` - Virtual world origin (x y z roll pitch yaw) (default: 0 0 0 0 0 0)
 /// - `<gaussian_noise>` - Gaussian noise std dev (default: 0.0)
 /// - `<update_rate>` - Update rate in Hz (default: 0 = unlimited)
 ///
@@ -133,6 +132,7 @@ public:
 ///   <ros_child_frame_id>base_footprint</ros_child_frame_id>
 ///   <update_rate>30</update_rate>
 ///   <gaussian_noise>0.01</gaussian_noise>
+///   <virtual_world_origin>0 0 0 0 0 0</virtual_world_origin>
 /// </plugin>
 /// ```
 class GlobalOdometryPublisher : public ignition::gazebo::System,

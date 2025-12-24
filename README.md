@@ -104,8 +104,7 @@ GlobalOdometryPublisher 是一个用于发布机器人任意 link 在世界坐�
 | `ros_frame_id` | string | 否 | "odom" | 写入消息头的 frame_id (供 ROS Bridge 使用) |
 | `ros_child_frame_id` | string | 否 | gazebo_child_frame | 写入消息头的 child_frame_id (供 ROS Bridge 使用) |
 | `local_twist` | bool | 否 | false | 是否在局部坐标系中计算速度 |
-| `xyz_offset` | Vector3d | 否 | [0, 0, 0] | 位置偏移 (米) |
-| `rpy_offset` | Vector3d | 否 | [0, 0, 0] | 姿态偏移 (弧度) |
+| `virtual_world_origin` | Vector6d | 否 | [0, 0, 0, 0, 0, 0] | 虚拟世界坐标系原点 (x y z roll pitch yaw)，用于坐标系变换 |
 | `gaussian_noise` | double | 否 | 0.0 | 高斯噪声标准差 |
 | `update_rate` | double | 否 | 0.0 | 更新频率 (Hz)，0 表示最快 |
 
@@ -126,8 +125,7 @@ GlobalOdometryPublisher 是一个用于发布机器人任意 link 在世界坐�
   <update_rate>50</update_rate>
   <gaussian_noise>0.01</gaussian_noise>
 
-  <!-- 可选的偏移 -->
-  <xyz_offset>0 0 0.1</xyz_offset>
-  <rpy_offset>0 0 0</rpy_offset>
+  <!-- 虚拟世界坐标系 (x y z roll pitch yaw) -->
+  <virtual_world_origin>0 0 0 0 0 0</virtual_world_origin>
 </plugin>
 ```

@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "ignition/common/Console.hh"
@@ -107,21 +108,26 @@ void GlobalOdometryPublisher::Configure(
     igndbg << "GlobalOdometryPublisher plugin missing <publish_tf>, defaults to false" << '\n';
   }
 
-  // Get XYZ offset (optional, defaults to [0, 0, 0])
-  if (_sdf->HasElement("xyz_offset")) {
-    data_ptr_->offset_.Pos() = _sdf->Get<ignition::math::Vector3d>("xyz_offset");
+  // Get virtual world origin (optional, defaults to identity pose)
+  if (_sdf->HasElement("virtual_world_origin")) {
+    std::string origin_str = _sdf->Get<std::string>("virtual_world_origin");
+    std::istringstream iss(origin_str);
+    double x, y, z, roll, pitch, yaw;
+    if (iss >> x >> y >> z >> roll >> pitch >> yaw) {
+      ignition::math::Vector3d pos(x, y, z);
+      ignition::math::Quaterniond rot(roll, pitch, yaw);
+      data_ptr_->virtual_world_origin_ = ignition::math::Pose3d(pos, rot);
+      igndbg << "GlobalOdometryPublisher plugin virtual_world_origin set to: " << x << " " << y
+             << " " << z << " " << roll << " " << pitch << " " << yaw << '\n';
+    } else {
+      ignerr << "Failed to parse virtual_world_origin. Expected format: x y z roll pitch yaw"
+             << '\n';
+      data_ptr_->virtual_world_origin_ = ignition::math::Pose3d::Zero;
+    }
   } else {
-    data_ptr_->offset_.Pos() = ignition::math::Vector3d(0, 0, 0);
-    igndbg << "GlobalOdometryPublisher plugin missing <xyz_offset>, defaults to 0s" << '\n';
-  }
-
-  // Get RPY offset (optional, defaults to [0, 0, 0])
-  if (_sdf->HasElement("rpy_offset")) {
-    auto rpy = _sdf->Get<ignition::math::Vector3d>("rpy_offset");
-    data_ptr_->offset_.Rot() = ignition::math::Quaterniond(rpy);
-  } else {
-    data_ptr_->offset_.Rot() = ignition::math::Quaterniond(0, 0, 0);
-    igndbg << "GlobalOdometryPublisher plugin missing <rpy_offset>, defaults to 0s" << '\n';
+    data_ptr_->virtual_world_origin_ = ignition::math::Pose3d::Zero;
+    igndbg << "GlobalOdometryPublisher plugin missing <virtual_world_origin>, defaults to identity"
+           << '\n';
   }
 
   // Get Gaussian noise (optional, defaults to 0.0)
@@ -330,10 +336,13 @@ void GlobalOdometryPublisher::PostUpdate(
     veul = pose.Rot().RotateVectorReverse(veul);
   }
 
-  // Apply constant offsets
-  pose.Pos() = pose.Pos() + data_ptr_->offset_.Pos();
-  pose.Rot() = data_ptr_->offset_.Rot() * pose.Rot();
-  pose.Rot().Normalize();
+  // Transform pose to virtual world coordinate system
+  // pose_virtual = virtual_world_origin^-1 * pose_real
+  pose = data_ptr_->virtual_world_origin_.Inverse() * pose;
+
+  // Transform velocities to virtual world coordinate system
+  vpos = data_ptr_->virtual_world_origin_.Rot().Inverse().RotateVector(vpos);
+  veul = data_ptr_->virtual_world_origin_.Rot().Inverse().RotateVector(veul);
 
   // Create and publish odometry message
   ignition::msgs::Odometry odom_msg;
