@@ -95,7 +95,7 @@
   direction: "GZ_TO_ROS"
 
 - ros_topic_name: "/livox/imu"
-  gz_topic_name: "/world/default/model/scorpio/link/mid360/sensor/mid360_imu/imu"
+  gz_topic_name: "/world/default/model/scorpio/link/mid360_imu/sensor/mid360_imu/imu"
   ros_type_name: "sensor_msgs/msg/Imu"
   gz_type_name: "ignition.msgs.IMU"
   direction: "GZ_TO_ROS"
