@@ -1,5 +1,9 @@
 # scorpio_simulator
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build and Test](https://github.com/scorpio-robot/scorpio_simulator/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/scorpio-robot/scorpio_simulator/actions/workflows/build_and_test.yml)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 ## 1. Overview
 
 scorpio_simulator 是基于 Gazebo (Ignition 字母版本) 的仿真环境
