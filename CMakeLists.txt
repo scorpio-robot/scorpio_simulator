@@ -17,12 +17,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #######################
 
 find_package(ament_cmake_auto REQUIRED)
-find_package(ignition-msgs8 REQUIRED)
-set(IGN_MSGS_VER 8)
-find_package(ignition-transport11 REQUIRED)
-set(IGN_TRANSPORT_VER 11)
-find_package(ignition-gazebo6 REQUIRED)
-set(IGN_GAZEBO_VER 6)
+find_package(gz-plugin2 REQUIRED COMPONENTS register)
+set(GZ_PLUGIN_VER 2)
+find_package(gz-sim8 REQUIRED)
+set(GZ_SIM_VER 8)
 ament_auto_find_build_dependencies()
 
 ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/gazebo.dsv.in")
@@ -37,9 +35,8 @@ ament_auto_add_library(GlobalOdometryPublisher SHARED
 )
 
 target_link_libraries(GlobalOdometryPublisher
-  ignition-gazebo${IGN_GAZEBO_VER}::ignition-gazebo${IGN_GAZEBO_VER}
-  ignition-transport${IGN_TRANSPORT_VER}::ignition-transport${IGN_TRANSPORT_VER}
-  ignition-msgs${IGN_MSGS_VER}::ignition-msgs${IGN_MSGS_VER}
+  PRIVATE gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+  PRIVATE gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
 )
 
 #############

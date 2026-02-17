@@ -19,11 +19,8 @@
 #include <random>
 #include <string>
 
-#include "ignition/gazebo/Link.hh"
-#include "ignition/gazebo/Model.hh"
-#include "ignition/gazebo/System.hh"
-#include "ignition/math/Pose3.hh"
-#include "ignition/transport/Node.hh"
+#include "gz/sim/System.hh"
+#include "gz/transport/Node.hh"
 
 namespace scorpio_simulator
 {
@@ -33,25 +30,25 @@ class GlobalOdometryPublisherPrivate
 {
 public:
   /// \brief Ignition communication node
-  ignition::transport::Node node_;
+  gz::transport::Node node_;
 
   /// \brief Publisher for odometry messages
-  ignition::transport::Node::Publisher pub_;
+  gz::transport::Node::Publisher pub_;
 
   /// \brief Publisher for odometry with covariance messages
-  ignition::transport::Node::Publisher pub_cov_;
+  gz::transport::Node::Publisher pub_cov_;
 
   /// \brief Publisher for TF messages
-  ignition::transport::Node::Publisher pub_tf_;
+  gz::transport::Node::Publisher pub_tf_;
 
   /// \brief Model entity
-  ignition::gazebo::Entity model_entity_;
+  gz::sim::Entity model_entity_;
 
   /// \brief Link entity (body to track)
-  ignition::gazebo::Entity link_entity_;
+  gz::sim::Entity link_entity_;
 
   /// \brief Reference link entity (for relative pose)
-  ignition::gazebo::Entity reference_link_entity_;
+  gz::sim::Entity reference_link_entity_;
 
   /// \brief Gazebo child frame (link to track)
   std::string gazebo_child_frame_;
@@ -78,7 +75,7 @@ public:
   bool local_twist_{false};
 
   /// \brief Virtual world origin pose (for coordinate system transformation)
-  ignition::math::Pose3d virtual_world_origin_;
+  gz::math::Pose3d virtual_world_origin_;
 
   /// \brief Update rate (Hz), 0 means as fast as possible
   double update_rate_{0.0};
@@ -90,10 +87,10 @@ public:
   std::chrono::steady_clock::duration last_update_time_{0};
 
   /// \brief Last linear velocity
-  ignition::math::Vector3d last_vpos_;
+  gz::math::Vector3d last_vpos_;
 
   /// \brief Last angular velocity
-  ignition::math::Vector3d last_veul_;
+  gz::math::Vector3d last_veul_;
 
   /// \brief Random number generator for Gaussian noise
   std::default_random_engine random_generator_;
@@ -106,7 +103,7 @@ public:
 /// \brief Plugin that publishes 3D pose and twist ground truth
 ///
 /// This plugin publishes the pose and twist of a specified link
-/// as ignition::msgs::Odometry messages for ground truth comparison.
+/// as gz::msgs::Odometry messages for ground truth comparison.
 ///
 /// ## System Parameters
 ///optional, default: "/model/{model_name}/{child_frame}/odometry")
@@ -124,7 +121,7 @@ public:
 ///
 /// ## Example Usage
 /// ```xml
-/// <plugin filename="GlobalOdometryPublisher" name="ignition::gazebo::systems::GlobalOdometryPublisher">
+/// <plugin filename="GlobalOdometryPublisher" name="gz::sim::systems::GlobalOdometryPublisher">
 ///   <gazebo_child_frame>base_link</gazebo_child_frame>
 ///   <gazebo_frame>world</gazebo_frame>
 ///   <topic_name>ground_truth/odom</topic_name>
@@ -135,10 +132,10 @@ public:
 ///   <virtual_world_origin>0 0 0 0 0 0</virtual_world_origin>
 /// </plugin>
 /// ```
-class GlobalOdometryPublisher : public ignition::gazebo::System,
-                                public ignition::gazebo::ISystemConfigure,
-                                public ignition::gazebo::ISystemPreUpdate,
-                                public ignition::gazebo::ISystemPostUpdate
+class GlobalOdometryPublisher : public gz::sim::System,
+                                public gz::sim::ISystemConfigure,
+                                public gz::sim::ISystemPreUpdate,
+                                public gz::sim::ISystemPostUpdate
 {
 public:
   /// \brief Constructor
@@ -154,25 +151,22 @@ public:
   ///                  instance
   /// \param[in] _eventMgr The EventManager of the given simulation instance
   void Configure(
-    const ignition::gazebo::Entity & _entity, const std::shared_ptr<const sdf::Element> & _sdf,
-    ignition::gazebo::EntityComponentManager & _ecm,
-    ignition::gazebo::EventManager & _eventMgr) override;
+    const gz::sim::Entity & _entity, const std::shared_ptr<const sdf::Element> & _sdf,
+    gz::sim::EntityComponentManager & _ecm, gz::sim::EventManager & _eventMgr) override;
 
   /// \brief Called at each simulation iteration (before physics update)
   /// \param[in] _info Current simulation information
   /// \param[in] _ecm The EntityComponentManager of the given simulation
   ///                  instance
   void PreUpdate(
-    const ignition::gazebo::UpdateInfo & _info,
-    ignition::gazebo::EntityComponentManager & _ecm) override;
+    const gz::sim::UpdateInfo & _info, gz::sim::EntityComponentManager & _ecm) override;
 
   /// \brief Called at each simulation iteration (after physics update)
   /// \param[in] _info Current simulation information
   /// \param[in] _ecm The EntityComponentManager of the given simulation
   ///                  instance
   void PostUpdate(
-    const ignition::gazebo::UpdateInfo & _info,
-    const ignition::gazebo::EntityComponentManager & _ecm) override;
+    const gz::sim::UpdateInfo & _info, const gz::sim::EntityComponentManager & _ecm) override;
 
 private:
   /// \brief Generate Gaussian random noise

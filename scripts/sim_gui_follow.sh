@@ -1,19 +1,23 @@
 #!/bin/zsh
 
-# Set user camera follow the robot in ignition-gazebo
+# Set gui camera to follow target in gz-sim
 
-x=-1.0
-y=0.0
-z=1.6
+# Define the tracking parameters
+track_mode=2
+follow_pgain=0.1
 
-ign service -s /gui/follow \
-  -r "data: 'scorpio'" \
-  --reqtype ignition.msgs.StringMsg \
-  --reptype ignition.msgs.Boolean \
-  --timeout 1000
+# The name of the entity to follow
+follow_target_name="scorpio"
 
-ign service -s /gui/follow/offset \
-  -r "x: $x, y: $y, z: $z" \
-  --reqtype ignition.msgs.Vector3d \
-  --reptype ignition.msgs.Boolean \
-  --timeout 1000
+# Offset from the followed entity (in meters)
+follow_offset_x=0.0
+follow_offset_y=0.0
+follow_offset_z=0.6
+
+# Publish the CameraTrack message to control camera behavior
+gz topic -t /gui/track \
+  -m gz.msgs.CameraTrack \
+  -p "track_mode: $track_mode, \
+      follow_target: {name: \"$follow_target_name\"}, \
+      follow_offset: {x: $follow_offset_x, y: $follow_offset_y, z: $follow_offset_z}, \
+      follow_pgain: $follow_pgain"

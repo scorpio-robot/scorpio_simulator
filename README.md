@@ -20,7 +20,7 @@ scorpio_simulator 是基于 Gazebo (Ignition 字母版本) 的仿真环境
 
 ### 2.1 Setup Environment
 
-Ubuntu 22.04: [ROS2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
+Ubuntu 24.04: [ROS2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
 
 > [!NOTE]
 > 由于使用了 RGLGazeboPlugin 用于仿真 mid360 点云,仿真包仅可运行在带 Nvidia GPU 的电脑
@@ -31,7 +31,6 @@ Ubuntu 22.04: [ROS2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-I
 
 ```sh
 pip3 install vcs2l
-pip3 install xmacro
 ```
 
 ```sh
@@ -65,15 +64,12 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=release
 ros2 launch rmu_gazebo_simulator bringup_sim.launch.py
 ```
 
-> [!NOTE]
-> **注意：需要点击 Gazebo 左下角橙红色的 `启动` 按钮**
-
 #### 2.3.1 Test Commands
 
 控制机器人移动
 
 ```sh
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true
 ```
 
 #### 2.3.2 切换仿真世界
@@ -115,7 +111,7 @@ GlobalOdometryPublisher 是一个用于发布机器人任意 link 在世界坐�
 #### 使用示例
 
 ```xml
-<plugin filename="GlobalOdometryPublisher" name="ignition::gazebo::systems::GlobalOdometryPublisher">
+<plugin filename="GlobalOdometryPublisher" name="gz::sim::systems::GlobalOdometryPublisher">
   <!-- Gazebo 坐标系配置 -->
   <gazebo_child_frame>base_link</gazebo_child_frame>
   <gazebo_frame>world</gazebo_frame>

@@ -21,7 +21,7 @@ from launch.actions import RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 from sdformat_tools.urdf_generator import UrdfGenerator
-from xmacro.xmacro4sdf import XMLMacro4sdf
+from sdformat_tools.xmacro4sdf import XMLMacro4sdf
 
 
 def generate_launch_description():
@@ -122,6 +122,8 @@ def generate_launch_description():
                 "ackermann_steering_controller",
                 "--param-file",
                 ros2_controllers_config,
+                "--controller-ros-args",
+                "-r  /ackermann_steering_controller/reference:=/cmd_vel",
             ],
         )
 

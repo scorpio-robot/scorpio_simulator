@@ -19,23 +19,15 @@
 #include <sstream>
 #include <string>
 
-#include "ignition/common/Console.hh"
-#include "ignition/common/Profiler.hh"
-#include "ignition/gazebo/Conversions.hh"
-#include "ignition/gazebo/Link.hh"
-#include "ignition/gazebo/Model.hh"
-#include "ignition/gazebo/Util.hh"
-#include "ignition/gazebo/components/AngularVelocity.hh"
-#include "ignition/gazebo/components/LinearVelocity.hh"
-#include "ignition/gazebo/components/Link.hh"
-#include "ignition/gazebo/components/Model.hh"
-#include "ignition/gazebo/components/Name.hh"
-#include "ignition/gazebo/components/Pose.hh"
-#include "ignition/msgs/Utility.hh"
-#include "ignition/msgs/odometry.pb.h"
-#include "ignition/msgs/odometry_with_covariance.pb.h"
-#include "ignition/msgs/pose_v.pb.h"
-#include "ignition/plugin/Register.hh"
+#include "gz/common/Console.hh"
+#include "gz/msgs/Utility.hh"
+#include "gz/msgs/odometry.pb.h"
+#include "gz/msgs/odometry_with_covariance.pb.h"
+#include "gz/msgs/pose_v.pb.h"
+#include "gz/sim/Model.hh"
+#include "gz/sim/components/AngularVelocity.hh"
+#include "gz/sim/components/LinearVelocity.hh"
+#include "gz/sim/components/Pose.hh"
 
 namespace scorpio_simulator
 {
@@ -48,12 +40,12 @@ GlobalOdometryPublisher::GlobalOdometryPublisher()
 GlobalOdometryPublisher::~GlobalOdometryPublisher() {}
 
 void GlobalOdometryPublisher::Configure(
-  const ignition::gazebo::Entity & _entity, const std::shared_ptr<const sdf::Element> & _sdf,
-  ignition::gazebo::EntityComponentManager & _ecm, ignition::gazebo::EventManager & /*_eventMgr*/)
+  const gz::sim::Entity & _entity, const std::shared_ptr<const sdf::Element> & _sdf,
+  gz::sim::EntityComponentManager & _ecm, gz::sim::EventManager & /*_eventMgr*/)
 {
   // Get model
   data_ptr_->model_entity_ = _entity;
-  auto model = ignition::gazebo::Model(_entity);
+  auto model = gz::sim::Model(_entity);
 
   if (!model.Valid(_ecm)) {
     ignerr << "GlobalOdometryPublisher plugin should be attached to a model entity. "
@@ -114,18 +106,18 @@ void GlobalOdometryPublisher::Configure(
     std::istringstream iss(origin_str);
     double x, y, z, roll, pitch, yaw;
     if (iss >> x >> y >> z >> roll >> pitch >> yaw) {
-      ignition::math::Vector3d pos(x, y, z);
-      ignition::math::Quaterniond rot(roll, pitch, yaw);
-      data_ptr_->virtual_world_origin_ = ignition::math::Pose3d(pos, rot);
+      gz::math::Vector3d pos(x, y, z);
+      gz::math::Quaterniond rot(roll, pitch, yaw);
+      data_ptr_->virtual_world_origin_ = gz::math::Pose3d(pos, rot);
       igndbg << "GlobalOdometryPublisher plugin virtual_world_origin set to: " << x << " " << y
              << " " << z << " " << roll << " " << pitch << " " << yaw << '\n';
     } else {
       ignerr << "Failed to parse virtual_world_origin. Expected format: x y z roll pitch yaw"
              << '\n';
-      data_ptr_->virtual_world_origin_ = ignition::math::Pose3d::Zero;
+      data_ptr_->virtual_world_origin_ = gz::math::Pose3d::Zero;
     }
   } else {
-    data_ptr_->virtual_world_origin_ = ignition::math::Pose3d::Zero;
+    data_ptr_->virtual_world_origin_ = gz::math::Pose3d::Zero;
     igndbg << "GlobalOdometryPublisher plugin missing <virtual_world_origin>, defaults to identity"
            << '\n';
   }
@@ -169,19 +161,18 @@ void GlobalOdometryPublisher::Configure(
   std::string odom_topic = data_ptr_->topic_name_;
 
   // Validate topic
-  std::string valid_topic = ignition::transport::TopicUtils::AsValidTopic(odom_topic);
+  std::string valid_topic = gz::transport::TopicUtils::AsValidTopic(odom_topic);
   if (valid_topic.empty()) {
     ignerr << "Invalid topic name: " << odom_topic << '\n';
     return;
   }
 
   // Advertise Odometry
-  data_ptr_->pub_ = data_ptr_->node_.Advertise<ignition::msgs::Odometry>(valid_topic);
+  data_ptr_->pub_ = data_ptr_->node_.Advertise<gz::msgs::Odometry>(valid_topic);
 
   // Advertise OdometryWithCovariance
   std::string cov_topic = valid_topic + "_with_covariance";
-  data_ptr_->pub_cov_ =
-    data_ptr_->node_.Advertise<ignition::msgs::OdometryWithCovariance>(cov_topic);
+  data_ptr_->pub_cov_ = data_ptr_->node_.Advertise<gz::msgs::OdometryWithCovariance>(cov_topic);
 
   // Advertise TF if requested
   if (data_ptr_->publish_tf_) {
@@ -190,7 +181,7 @@ void GlobalOdometryPublisher::Configure(
     if (_sdf->HasElement("tf_topic")) {
       tf_topic = _sdf->Get<std::string>("tf_topic");
     }
-    data_ptr_->pub_tf_ = data_ptr_->node_.Advertise<ignition::msgs::Pose_V>(tf_topic);
+    data_ptr_->pub_tf_ = data_ptr_->node_.Advertise<gz::msgs::Pose_V>(tf_topic);
   }
 
   // Initialize Gaussian noise generator
@@ -206,15 +197,15 @@ void GlobalOdometryPublisher::Configure(
 }
 
 void GlobalOdometryPublisher::PreUpdate(
-  const ignition::gazebo::UpdateInfo & _info, ignition::gazebo::EntityComponentManager & _ecm)
+  const gz::sim::UpdateInfo & _info, gz::sim::EntityComponentManager & _ecm)
 {
   // Initialize entities and components on first update
   if (!data_ptr_->entities_initialized_) {
-    auto model = ignition::gazebo::Model(data_ptr_->model_entity_);
+    auto model = gz::sim::Model(data_ptr_->model_entity_);
 
     // Find link entity
     data_ptr_->link_entity_ = model.LinkByName(_ecm, data_ptr_->gazebo_child_frame_);
-    if (data_ptr_->link_entity_ == ignition::gazebo::kNullEntity) {
+    if (data_ptr_->link_entity_ == gz::sim::kNullEntity) {
       ignerr << "GlobalOdometryPublisher: Link [" << data_ptr_->gazebo_child_frame_ << "] not found"
              << '\n';
       return;
@@ -225,7 +216,7 @@ void GlobalOdometryPublisher::PreUpdate(
       data_ptr_->gazebo_frame_ != "world" && data_ptr_->gazebo_frame_ != "map" &&
       data_ptr_->gazebo_frame_ != "/world" && data_ptr_->gazebo_frame_ != "/map") {
       data_ptr_->reference_link_entity_ = model.LinkByName(_ecm, data_ptr_->gazebo_frame_);
-      if (data_ptr_->reference_link_entity_ == ignition::gazebo::kNullEntity) {
+      if (data_ptr_->reference_link_entity_ == gz::sim::kNullEntity) {
         ignerr << "GlobalOdometryPublisher: Reference link [" << data_ptr_->gazebo_frame_
                << "] not found, will not publish pose" << '\n';
         return;
@@ -233,33 +224,29 @@ void GlobalOdometryPublisher::PreUpdate(
     }
 
     // Create components for link if they don't exist
-    if (!_ecm.Component<ignition::gazebo::components::WorldPose>(data_ptr_->link_entity_)) {
-      _ecm.CreateComponent(data_ptr_->link_entity_, ignition::gazebo::components::WorldPose());
+    if (!_ecm.Component<gz::sim::components::WorldPose>(data_ptr_->link_entity_)) {
+      _ecm.CreateComponent(data_ptr_->link_entity_, gz::sim::components::WorldPose());
     }
-    if (!_ecm.Component<ignition::gazebo::components::LinearVelocity>(data_ptr_->link_entity_)) {
-      _ecm.CreateComponent(data_ptr_->link_entity_, ignition::gazebo::components::LinearVelocity());
+    if (!_ecm.Component<gz::sim::components::LinearVelocity>(data_ptr_->link_entity_)) {
+      _ecm.CreateComponent(data_ptr_->link_entity_, gz::sim::components::LinearVelocity());
     }
-    if (!_ecm.Component<ignition::gazebo::components::AngularVelocity>(data_ptr_->link_entity_)) {
-      _ecm.CreateComponent(
-        data_ptr_->link_entity_, ignition::gazebo::components::AngularVelocity());
+    if (!_ecm.Component<gz::sim::components::AngularVelocity>(data_ptr_->link_entity_)) {
+      _ecm.CreateComponent(data_ptr_->link_entity_, gz::sim::components::AngularVelocity());
     }
 
     // Create components for reference link if needed
-    if (data_ptr_->reference_link_entity_ != ignition::gazebo::kNullEntity) {
-      if (!_ecm.Component<ignition::gazebo::components::WorldPose>(
-            data_ptr_->reference_link_entity_)) {
-        _ecm.CreateComponent(
-          data_ptr_->reference_link_entity_, ignition::gazebo::components::WorldPose());
+    if (data_ptr_->reference_link_entity_ != gz::sim::kNullEntity) {
+      if (!_ecm.Component<gz::sim::components::WorldPose>(data_ptr_->reference_link_entity_)) {
+        _ecm.CreateComponent(data_ptr_->reference_link_entity_, gz::sim::components::WorldPose());
       }
-      if (!_ecm.Component<ignition::gazebo::components::LinearVelocity>(
-            data_ptr_->reference_link_entity_)) {
+      if (!_ecm.Component<gz::sim::components::LinearVelocity>(data_ptr_->reference_link_entity_)) {
         _ecm.CreateComponent(
-          data_ptr_->reference_link_entity_, ignition::gazebo::components::LinearVelocity());
+          data_ptr_->reference_link_entity_, gz::sim::components::LinearVelocity());
       }
-      if (!_ecm.Component<ignition::gazebo::components::AngularVelocity>(
+      if (!_ecm.Component<gz::sim::components::AngularVelocity>(
             data_ptr_->reference_link_entity_)) {
         _ecm.CreateComponent(
-          data_ptr_->reference_link_entity_, ignition::gazebo::components::AngularVelocity());
+          data_ptr_->reference_link_entity_, gz::sim::components::AngularVelocity());
       }
     }
 
@@ -269,7 +256,7 @@ void GlobalOdometryPublisher::PreUpdate(
 }
 
 void GlobalOdometryPublisher::PostUpdate(
-  const ignition::gazebo::UpdateInfo & _info, const ignition::gazebo::EntityComponentManager & _ecm)
+  const gz::sim::UpdateInfo & _info, const gz::sim::EntityComponentManager & _ecm)
 {
   // Check if paused or not initialized
   if (_info.paused || !data_ptr_->entities_initialized_) {
@@ -287,34 +274,33 @@ void GlobalOdometryPublisher::PostUpdate(
   }
 
   // Get link pose and velocities
-  auto world_pose_comp =
-    _ecm.Component<ignition::gazebo::components::WorldPose>(data_ptr_->link_entity_);
+  auto world_pose_comp = _ecm.Component<gz::sim::components::WorldPose>(data_ptr_->link_entity_);
   auto world_lin_vel_comp =
-    _ecm.Component<ignition::gazebo::components::LinearVelocity>(data_ptr_->link_entity_);
+    _ecm.Component<gz::sim::components::LinearVelocity>(data_ptr_->link_entity_);
   auto world_ang_vel_comp =
-    _ecm.Component<ignition::gazebo::components::AngularVelocity>(data_ptr_->link_entity_);
+    _ecm.Component<gz::sim::components::AngularVelocity>(data_ptr_->link_entity_);
 
   if (!world_pose_comp || !world_lin_vel_comp || !world_ang_vel_comp) {
     return;
   }
 
-  ignition::math::Pose3d pose = world_pose_comp->Data();
-  ignition::math::Vector3d vpos = world_lin_vel_comp->Data();
-  ignition::math::Vector3d veul = world_ang_vel_comp->Data();
+  gz::math::Pose3d pose = world_pose_comp->Data();
+  gz::math::Vector3d vpos = world_lin_vel_comp->Data();
+  gz::math::Vector3d veul = world_ang_vel_comp->Data();
 
   // Apply reference frame if specified
-  if (data_ptr_->reference_link_entity_ != ignition::gazebo::kNullEntity) {
+  if (data_ptr_->reference_link_entity_ != gz::sim::kNullEntity) {
     auto ref_pose_comp =
-      _ecm.Component<ignition::gazebo::components::WorldPose>(data_ptr_->reference_link_entity_);
-    auto ref_lin_vel_comp = _ecm.Component<ignition::gazebo::components::LinearVelocity>(
-      data_ptr_->reference_link_entity_);
-    auto ref_ang_vel_comp = _ecm.Component<ignition::gazebo::components::AngularVelocity>(
-      data_ptr_->reference_link_entity_);
+      _ecm.Component<gz::sim::components::WorldPose>(data_ptr_->reference_link_entity_);
+    auto ref_lin_vel_comp =
+      _ecm.Component<gz::sim::components::LinearVelocity>(data_ptr_->reference_link_entity_);
+    auto ref_ang_vel_comp =
+      _ecm.Component<gz::sim::components::AngularVelocity>(data_ptr_->reference_link_entity_);
 
     if (ref_pose_comp && ref_lin_vel_comp && ref_ang_vel_comp) {
-      ignition::math::Pose3d frame_pose = ref_pose_comp->Data();
-      ignition::math::Vector3d frame_vpos = ref_lin_vel_comp->Data();
-      ignition::math::Vector3d frame_veul = ref_ang_vel_comp->Data();
+      gz::math::Pose3d frame_pose = ref_pose_comp->Data();
+      gz::math::Vector3d frame_vpos = ref_lin_vel_comp->Data();
+      gz::math::Vector3d frame_veul = ref_ang_vel_comp->Data();
 
       // Convert to relative pose
       pose.Pos() = pose.Pos() - frame_pose.Pos();
@@ -345,11 +331,11 @@ void GlobalOdometryPublisher::PostUpdate(
   veul = data_ptr_->virtual_world_origin_.Rot().Inverse().RotateVector(veul);
 
   // Create and publish odometry message
-  ignition::msgs::Odometry odom_msg;
+  gz::msgs::Odometry odom_msg;
 
   // Set header
   auto header = odom_msg.mutable_header();
-  header->mutable_stamp()->CopyFrom(ignition::msgs::Convert(_info.simTime));
+  header->mutable_stamp()->CopyFrom(gz::msgs::Convert(_info.simTime));
 
   auto frame_id = header->add_data();
   frame_id->set_key("frame_id");
@@ -360,7 +346,7 @@ void GlobalOdometryPublisher::PostUpdate(
   child_frame_id->add_value(data_ptr_->ros_child_frame_id_);
 
   // Set pose
-  ignition::msgs::Set(odom_msg.mutable_pose(), pose);
+  gz::msgs::Set(odom_msg.mutable_pose(), pose);
 
   // Set twist with Gaussian noise
   odom_msg.mutable_twist()->mutable_linear()->set_x(
@@ -384,7 +370,7 @@ void GlobalOdometryPublisher::PostUpdate(
 
   // Publish OdometryWithCovariance
   if (data_ptr_->pub_cov_.Valid()) {
-    ignition::msgs::OdometryWithCovariance odom_cov_msg;
+    gz::msgs::OdometryWithCovariance odom_cov_msg;
     odom_cov_msg.mutable_header()->CopyFrom(*header);
 
     // Copy pose and twist
@@ -407,7 +393,7 @@ void GlobalOdometryPublisher::PostUpdate(
 
   // Publish TF
   if (data_ptr_->pub_tf_.Valid()) {
-    ignition::msgs::Pose_V tf_msg;
+    gz::msgs::Pose_V tf_msg;
     auto tf_pose = tf_msg.add_pose();
     tf_pose->CopyFrom(odom_msg.pose());
     tf_pose->mutable_header()->CopyFrom(*header);
@@ -430,11 +416,12 @@ double GlobalOdometryPublisher::gaussianKernel(double mu, double sigma)
 }  // namespace scorpio_simulator
 
 // Register plugin
-IGNITION_ADD_PLUGIN(
-  scorpio_simulator::GlobalOdometryPublisher, ignition::gazebo::System,
+#include "gz/plugin/Register.hh"
+GZ_ADD_PLUGIN(
+  scorpio_simulator::GlobalOdometryPublisher, gz::sim::System,
   scorpio_simulator::GlobalOdometryPublisher::ISystemConfigure,
   scorpio_simulator::GlobalOdometryPublisher::ISystemPreUpdate,
   scorpio_simulator::GlobalOdometryPublisher::ISystemPostUpdate)
 
-IGNITION_ADD_PLUGIN_ALIAS(
-  scorpio_simulator::GlobalOdometryPublisher, "ignition::gazebo::systems::GlobalOdometryPublisher")
+GZ_ADD_PLUGIN_ALIAS(
+  scorpio_simulator::GlobalOdometryPublisher, "gz::sim::systems::GlobalOdometryPublisher")
