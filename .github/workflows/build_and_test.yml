@@ -6,7 +6,7 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     container:
-      image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
+      image: rostooling/setup-ros-docker:ubuntu-jammy-ros-jazzy-ros-base-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,5 +26,5 @@ jobs:
         uses: ros-tooling/action-ros-ci@v0.4
         with:
           package-name: scorpio_simulator
-          target-ros2-distro: humble
+          target-ros2-distro: jazzy
           vcs-repo-file-url: "${{ github.workspace }}/dependencies.repos"
