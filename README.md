@@ -4,6 +4,9 @@
 [![Build and Test](https://github.com/scorpio-robot/scorpio_simulator/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/scorpio-robot/scorpio_simulator/actions/workflows/build_and_test.yml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
+> [!WARNING]
+> 本分支（humble，gazebo-ignition 适配）已停止维护，不再更新。
+
 ## 1. Overview
 
 scorpio_simulator 是基于 Gazebo (Ignition 字母版本) 的仿真环境
