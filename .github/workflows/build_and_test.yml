@@ -8,7 +8,7 @@ jobs:
     container:
       image: rostooling/setup-ros-docker:ubuntu-jammy-ros-jazzy-ros-base-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Add LLVM APT repository
         uses: gerlero/add-apt-repository@v1
