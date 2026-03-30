@@ -17,12 +17,15 @@ import os
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
     pkg_simulator = get_package_share_directory("scorpio_simulator")
+
+    headless = LaunchConfiguration("headless")
 
     gz_world_path = os.path.join(pkg_simulator, "config", "gz_world.yaml")
     with open(gz_world_path) as file:
@@ -34,11 +37,19 @@ def generate_launch_description():
     )
     gz_config_path = os.path.join(pkg_simulator, "resource", "ign", "gui.config")
 
+    declare_headless = DeclareLaunchArgument(
+        "headless",
+        default_value="False",
+        choices=["True", "False"],
+        description="Whether to launch Gazebo in headless mode (without GUI)",
+    )
+
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_simulator, "launch", "gazebo_launch.py")
         ),
         launch_arguments={
+            "headless": headless,
             "world_sdf_path": world_sdf_path,
             "gz_config_path": gz_config_path,
         }.items(),
@@ -56,6 +67,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(declare_headless)
     ld.add_action(gazebo_launch)
     ld.add_action(spawn_robots_launch)
 

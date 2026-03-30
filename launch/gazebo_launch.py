@@ -16,10 +16,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import (
-    DeclareLaunchArgument,
-    IncludeLaunchDescription,
-)
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression, TextSubstitution
 from launch_ros.actions import Node
@@ -28,9 +25,16 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_simulator = get_package_share_directory("scorpio_simulator")
 
+    headless = LaunchConfiguration("headless")
     world_sdf_path = LaunchConfiguration("world_sdf_path")
     gz_config_path = LaunchConfiguration("gz_config_path")
-    start_gazebo_gui = LaunchConfiguration("start_gazebo_gui")
+
+    declare_headless = DeclareLaunchArgument(
+        "headless",
+        default_value="False",
+        choices=["True", "False"],
+        description="Whether to launch Gazebo in headless mode (without GUI)",
+    )
 
     declare_world_sdf_path = DeclareLaunchArgument(
         "world_sdf_path",
@@ -46,13 +50,6 @@ def generate_launch_description():
         description="Path to the Ignition Gazebo GUI configuration file",
     )
 
-    declare_start_gazebo_gui = DeclareLaunchArgument(
-        "start_gazebo_gui",
-        default_value="True",
-        choices=["True", "False"],
-        description="Whether to start Gazebo GUI",
-    )
-
     # Launch Gazebo simulator
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -64,7 +61,7 @@ def generate_launch_description():
             "gz_args": [
                 world_sdf_path,
                 PythonExpression(
-                    ['"" if ', start_gazebo_gui, ' else " -s"']
+                    ['" -s" if ', headless, ' else ""']
                 ),  # whether to start gui
                 TextSubstitution(text=" -r"),
                 TextSubstitution(text=" --gui-config "),
@@ -83,9 +80,9 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(declare_headless)
     ld.add_action(declare_world_sdf_path)
     ld.add_action(declare_gz_config_path)
-    ld.add_action(declare_start_gazebo_gui)
     ld.add_action(gazebo)
     ld.add_action(robot_gz_bridge)
 
