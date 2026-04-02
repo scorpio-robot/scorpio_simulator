@@ -6,15 +6,15 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     container:
-      image: rostooling/setup-ros-docker:ubuntu-jammy-ros-jazzy-ros-base-latest
+      image: rostooling/setup-ros-docker:ubuntu-noble-ros-jazzy-ros-base-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Add LLVM APT repository
         uses: gerlero/add-apt-repository@v1
         with:
-          uri: http://apt.llvm.org/jammy/
-          suite: llvm-toolchain-jammy-21
+          uri: https://apt.llvm.org/noble/
+          suite: llvm-toolchain-noble-21
           key: https://apt.llvm.org/llvm-snapshot.gpg.key
 
       - name: Install clang-format and clang-tidy
