@@ -30,7 +30,7 @@
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact">
     </plugin>
 
-    <!-- <plugin name='rgl::RGLServerPluginManager' filename='RGLServerPluginManager'>
+    <!-- <plugin filename='RGLServerPluginManager' name='rgl::RGLServerPluginManager'>
       <do_ignore_entities_in_lidar_link>true</do_ignore_entities_in_lidar_link>
     </plugin> -->
 

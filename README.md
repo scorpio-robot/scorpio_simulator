@@ -22,8 +22,8 @@ scorpio_simulator 是基于 Gazebo (Ignition 字母版本) 的仿真环境
 
 Ubuntu 24.04: [ROS2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
 
-> [!NOTE]
-> 由于使用了 RGLGazeboPlugin 用于仿真 mid360 点云,仿真包仅可运行在带 Nvidia GPU 的电脑
+<!-- > [!NOTE]
+> 由于使用了 RGLGazeboPlugin 用于仿真 mid360 点云,仿真包仅可运行在带 Nvidia GPU 的电脑 -->
 
 ### 2.2 Create Workspace
 

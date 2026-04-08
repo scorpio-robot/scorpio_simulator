@@ -4,7 +4,7 @@ repositories:
     url: https://github.com/scorpio-robot/scorpio_description.git
     version: main
 
-  rgl_gazebo_plugin:
-    type: git
-    url: https://github.com/LihanChen2004/rgl_gazebo_plugin.git
-    version: dev/fortress/add_timestamp_field
+  # rgl_gazebo_plugin:
+  #   type: git
+  #   url: https://github.com/LihanChen2004/rgl_gazebo_plugin.git
+  #   version: dev/harmonic
