@@ -35,8 +35,18 @@ ament_auto_add_library(GlobalOdometryPublisher SHARED
 )
 
 target_link_libraries(GlobalOdometryPublisher
-  PRIVATE gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
-  PRIVATE gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+)
+
+# Build LinearPingPongMover plugin
+ament_auto_add_library(LinearPingPongMover SHARED
+  src/linear_ping_pong_mover.cpp
+)
+
+target_link_libraries(LinearPingPongMover
+  gz-plugin${GZ_PLUGIN_VER}::gz-plugin${GZ_PLUGIN_VER}
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
 )
 
 #############

@@ -80,6 +80,17 @@
         </visual>
       </link>
     </model>
+
+    <!-- <include>
+      <uri>model://dynamic_obstacle</uri>
+      <name>obstacle_line1</name>
+      <plugin filename="LinearPingPongMover" name="gz::sim::systems::LinearPingPongMover">
+        <start>0.7 0 0.5</start>
+        <end>0 2 0.5</end>
+        <speed>1.0</speed>
+      </plugin>
+    </include> -->
+
     <include>
       <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Warehouse</uri>
       <name>warehouse</name>
