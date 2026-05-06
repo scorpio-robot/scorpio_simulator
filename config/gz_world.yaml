@@ -1,6 +1,14 @@
-world: "warehouse"
+world: "rmuc_2025"
 
 robots:
+  rmuc_2025:
+    - name: "scorpio"
+      color: "red"
+      x_pose: "3.4"
+      y_pose: "9.5"
+      z_pose: "0.28"
+      yaw: "0.0"
+
   turtlebot3_dqn:
     - name: "scorpio"
       x_pose: "0.0"
