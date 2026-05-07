@@ -1,9 +1,15 @@
-world: "rmuc_2025"
+world: "rmuc_2024"
 
 robots:
+  rmuc_2024:
+    - name: "scorpio"
+      x_pose: "6.35"
+      y_pose: "7.6"
+      z_pose: "0.2"
+      yaw: "0.0"
+
   rmuc_2025:
     - name: "scorpio"
-      color: "red"
       x_pose: "3.4"
       y_pose: "9.5"
       z_pose: "0.28"

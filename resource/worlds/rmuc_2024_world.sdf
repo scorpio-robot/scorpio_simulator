@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <!-- <plugin filename='RGLServerPluginManager' name='rgl::RGLServerPluginManager'>
+      <do_ignore_entities_in_lidar_link>true</do_ignore_entities_in_lidar_link>
+    </plugin> -->
+
+    <light type="point" name="indoor_fill_light">
+      <visualize>false</visualize>
+      <cast_shadows>true</cast_shadows>
+      <pose>10.6 7.9 10 0 0 0</pose>
+      <diffuse>0.95 0.95 0.95 1</diffuse>
+      <specular>0.35 0.35 0.35 1</specular>
+      <attenuation>
+        <range>80</range>
+        <constant>0.6</constant>
+        <linear>0.03</linear>
+        <quadratic>0.002</quadratic>
+      </attenuation>
+    </light>
+
+    <model name="rmuc_2024">
+      <include>
+        <uri>model://rmuc_2024</uri>
+      </include>
+      <pose>0.0 0.0 0 0 0 0</pose>
+      <static>true</static>
+    </model>
+  </world>
+</sdf>
